@@ -185,6 +185,14 @@ func (self *_Array) Bytes() []byte {
 	return append(w32, buf.Bytes()...)
 }
 
+type _Binary struct {
+	value []byte
+	_Null
+}
+
+func (self *_Binary) Kind() int { return BinaryKind }
+func (self *_Binary) Bytes() []byte { return self.value }
+
 type _OID struct {
 	value []byte
 	_Null
@@ -327,6 +335,7 @@ type Builder interface {
 	Bool(b bool)
 	Date(self *time.Time)
 	OID(o []byte)
+	Binary(data []byte)
 	Regex(regex, options string)
 	Null()
 	Object()
@@ -377,6 +386,7 @@ func (self *_BSONBuilder) Float64(f float64) { self.Put(&_Number{f, _Null{}}) }
 func (self *_BSONBuilder) String(s string)   { self.Put(&_String{s, _Null{}}) }
 func (self *_BSONBuilder) Object()           { self.Put(&_Object{make(map[string]BSON), _Null{}}) }
 func (self *_BSONBuilder) Array()            { self.Put(&_Array{new(vector.Vector), _Null{}}) }
+func (self *_BSONBuilder) Binary(data []byte){ self.Put(&_Binary{data, _Null{}}) }
 func (self *_BSONBuilder) Bool(b bool)       { self.Put(&_Boolean{b, _Null{}}) }
 func (self *_BSONBuilder) Date(t *time.Time) { self.Put(&_Date{t, _Null{}}) }
 func (self *_BSONBuilder) Null()             { self.Put(Null) }
@@ -471,6 +481,15 @@ func Parse(buf *bytes.Buffer, builder Builder) (err os.Error) {
 			b2.Array()
 			ioutil.ReadAll(io.LimitReader(buf, 4))
 			err = Parse(buf, b2)
+		case BinaryKind:
+			bits, _ := ioutil.ReadAll(io.LimitReader(buf, 4))
+			l := pack.Uint32(bits)
+			t, _ := ioutil.ReadAll(io.LimitReader(buf, 1))
+			if t[0] != 0 {
+				panic("cant handle this right now")
+			}
+			bin, _ := ioutil.ReadAll(io.LimitReader(buf, int64(l-1)))
+			b2.Binary(bin)
 		case OIDKind:
 			oid, _ := ioutil.ReadAll(io.LimitReader(buf, 12))
 			b2.OID(oid)

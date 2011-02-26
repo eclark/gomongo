@@ -153,6 +153,21 @@ func (self *structBuilder) OID(oid []byte) {
 	}
 }
 
+func (self *structBuilder) Binary(data []byte) {
+	if self == nil {
+		return
+	}
+	if v, ok := self.val.(*reflect.SliceValue); ok {
+		if v.Cap() < len(data) {
+			nv := reflect.MakeSlice(v.Type().(*reflect.SliceType), len(data), len(data))
+			v.Set(nv)
+		}
+		for i, byt := range data {
+			v.Elem(i).(*reflect.UintValue).Set(uint64(byt))
+		}
+	}
+}
+
 func (self *structBuilder) Array() {
 	if self == nil {
 		return
@@ -289,6 +304,8 @@ func Marshal(val interface{}) (BSON, os.Error) {
 		return &_Long{int64(v), _Null{}}, nil
 	case *time.Time:
 		return &_Date{v, _Null{}}, nil
+	case BSON:
+		return v, nil
 	}
 
 	var value reflect.Value
