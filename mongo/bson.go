@@ -53,6 +53,7 @@ type BSON interface {
 	Regex() (string, string)
 	Int() int32
 	Long() int64
+	Binary() []byte
 
 	Get(s string) BSON
 	Elem(i int) BSON
@@ -77,6 +78,7 @@ func (*_Null) Long() int64             { return 0 }
 func (*_Null) Get(string) BSON         { return Null }
 func (*_Null) Elem(int) BSON           { return Null }
 func (*_Null) Len() int                { return 0 }
+func (*_Null) Binary() []byte					 { return []byte{} }
 func (*_Null) Bytes() []byte           { return []byte{0} }
 
 type _Number struct {
@@ -191,6 +193,7 @@ type _Binary struct {
 }
 
 func (self *_Binary) Kind() int { return BinaryKind }
+func (self *_Binary) Binary() []byte { return self.value }
 func (self *_Binary) Bytes() []byte { return self.value }
 
 type _OID struct {
